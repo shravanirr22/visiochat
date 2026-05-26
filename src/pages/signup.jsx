@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom"
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from "firebase/auth"
 import { auth, googleProvider } from "../firebase/config"
 import { saveUser } from "../firebase/firestore"
+import { motion } from "framer-motion"
+import { FcGoogle } from "react-icons/fc"
+import { FiUser, FiMail, FiPhone, FiLock, FiArrowLeft } from "react-icons/fi"
 
 export default function Signup() {
     const navigate = useNavigate()
@@ -25,14 +28,10 @@ export default function Signup() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password)
             await updateProfile(userCredential.user, { displayName: name })
 
-            // Save to Firestore
             await saveUser(userCredential.user, role, phone)
-
-            console.log("User saved to Firestore!")
             navigate("/login")
         } catch (err) {
             setError(err.message)
-            console.log("Signup error:", err)
         } finally {
             setLoading(false)
         }
@@ -53,135 +52,142 @@ export default function Signup() {
     }
 
     return (
-        <div className="min-h-screen bg-white flex flex-col">
+        <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center py-10 px-4 sm:px-6">
+            
+            {/* Animated Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-primarydark to-primarylight animate-gradient z-0"></div>
+            
+            {/* Glassmorphic Overlay */}
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-[40px] z-0"></div>
 
-            {/* Top Purple Section */}
-            <div className="bg-primary px-6 pt-12 pb-8">
-                <button onClick={() => navigate("/")} className="text-white text-sm mb-4 flex items-center gap-1">
-                    ← Back
-                </button>
-                <h1 className="text-white text-2xl font-semibold">Create account</h1>
-                <p className="text-muted text-sm mt-1">Join VisioChat today</p>
-            </div>
-
-            <div className="flex-1 px-6 pt-8 flex flex-col gap-5">
-
-                {/* Error */}
-                {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-600 text-xs px-4 py-3 rounded-xl">
-                        {error}
-                    </div>
-                )}
-
-                {/* Name */}
-                <div className="flex flex-col gap-1">
-                    <label className="text-primarydark text-sm font-medium">Full name</label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Your full name"
-                        className="border border-muted rounded-xl px-4 py-3 text-sm text-primarydark bg-primarylight outline-none focus:border-primary"
-                    />
-                </div>
-
-                {/* Phone */}
-                <div className="flex flex-col gap-1">
-                    <label className="text-primarydark text-sm font-medium">
-                        Phone number
-                    </label>
-                    <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="9876543210"
-                        className="border border-muted rounded-xl px-4 py-3 text-sm text-primarydark bg-primarylight outline-none focus:border-primary"
-                    />
-                </div>
-
-                {/* Email */}
-                <div className="flex flex-col gap-1">
-                    <label className="text-primarydark text-sm font-medium">Email address</label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@email.com"
-                        className="border border-muted rounded-xl px-4 py-3 text-sm text-primarydark bg-primarylight outline-none focus:border-primary"
-                    />
-                </div>
-
-                {/* Password */}
-                <div className="flex flex-col gap-1">
-                    <label className="text-primarydark text-sm font-medium">Password</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Create a password"
-                        className="border border-muted rounded-xl px-4 py-3 text-sm text-primarydark bg-primarylight outline-none focus:border-primary"
-                    />
-                </div>
-
-                {/* Role */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-primarydark text-sm font-medium">I am a</label>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setRole("teacher")}
-                            className={`flex-1 border-2 font-medium py-2 rounded-xl text-sm transition ${role === "teacher"
-                                    ? "border-primary bg-primarylight text-primarydark"
-                                    : "border-muted text-muted"
-                                }`}
-                        >
-                            👨‍🏫 Teacher
-                        </button>
-                        <button
-                            onClick={() => setRole("student")}
-                            className={`flex-1 border-2 font-medium py-2 rounded-xl text-sm transition ${role === "student"
-                                    ? "border-primary bg-primarylight text-primarydark"
-                                    : "border-muted text-muted"
-                                }`}
-                        >
-                            👨‍🎓 Student
-                        </button>
-                    </div>
-                </div>
-
-                {/* Submit */}
-                <button
-                    onClick={handleSignup}
-                    disabled={loading}
-                    className="w-full bg-primary text-white font-semibold py-3 rounded-full text-sm hover:opacity-90 transition mt-2 disabled:opacity-60"
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="relative z-10 w-full max-w-md bg-white/80 backdrop-blur-2xl border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[2.5rem] p-8 sm:p-10"
+            >
+                <button 
+                    onClick={() => navigate("/")} 
+                    className="absolute top-6 left-6 text-slate-400 hover:text-primary transition-colors p-2 bg-white/50 rounded-full"
                 >
-                    {loading ? "Creating account..." : "Create Account"}
+                    <FiArrowLeft size={20} />
                 </button>
 
-                {/* Divider */}
-                <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-muted"></div>
-                    <span className="text-muted text-xs">or</span>
-                    <div className="flex-1 h-px bg-muted"></div>
+                <div className="text-center mb-6 mt-4">
+                    <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Create account</h1>
+                    <p className="text-slate-500 mt-2 font-medium">Join VisioChat today</p>
                 </div>
 
-                {/* Google */}
-                <button
-                    onClick={handleGoogle}
-                    disabled={loading}
-                    className="w-full border border-muted bg-primarylight text-primarydark font-medium py-3 rounded-full text-sm disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                    <span>🌐</span>
-                    Continue with Google
-                </button>
+                <div className="flex flex-col gap-4">
+                    {/* Error */}
+                    {error && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl font-medium">
+                            {error}
+                        </motion.div>
+                    )}
 
-                <p className="text-center text-sm text-gray-400 pb-6">
-                    Already have an account?{" "}
-                    <span onClick={() => navigate("/login")} className="text-primary font-semibold cursor-pointer">
-                        Sign in
-                    </span>
-                </p>
+                    {/* Name */}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-slate-700 text-xs font-bold uppercase tracking-wider pl-1">Full name</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                                <FiUser size={18} />
+                            </div>
+                            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name"
+                                className="w-full bg-white/60 border border-white/50 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner"
+                            />
+                        </div>
+                    </div>
 
-            </div>
+                    {/* Phone */}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-slate-700 text-xs font-bold uppercase tracking-wider pl-1">Phone number</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                                <FiPhone size={18} />
+                            </div>
+                            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="9876543210"
+                                className="w-full bg-white/60 border border-white/50 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Email */}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-slate-700 text-xs font-bold uppercase tracking-wider pl-1">Email address</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                                <FiMail size={18} />
+                            </div>
+                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com"
+                                className="w-full bg-white/60 border border-white/50 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Password */}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-slate-700 text-xs font-bold uppercase tracking-wider pl-1">Password</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                                <FiLock size={18} />
+                            </div>
+                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password"
+                                className="w-full bg-white/60 border border-white/50 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-inner"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Role */}
+                    <div className="flex flex-col gap-2 mt-1">
+                        <label className="text-slate-700 text-xs font-bold uppercase tracking-wider pl-1">I am a</label>
+                        <div className="flex gap-3">
+                            <motion.button whileTap={{ scale: 0.95 }} onClick={() => setRole("teacher")}
+                                className={`flex-1 border-2 font-bold py-3 rounded-2xl text-sm transition-all flex items-center justify-center gap-2 ${role === "teacher" ? "border-primary bg-primary/10 text-primary" : "border-white/50 bg-white/40 text-slate-500 hover:bg-white/60"}`}
+                            >
+                                👨‍🏫 Teacher
+                            </motion.button>
+                            <motion.button whileTap={{ scale: 0.95 }} onClick={() => setRole("student")}
+                                className={`flex-1 border-2 font-bold py-3 rounded-2xl text-sm transition-all flex items-center justify-center gap-2 ${role === "student" ? "border-primary bg-primary/10 text-primary" : "border-white/50 bg-white/40 text-slate-500 hover:bg-white/60"}`}
+                            >
+                                👨‍🎓 Student
+                            </motion.button>
+                        </div>
+                    </div>
+
+                    {/* Submit */}
+                    <motion.button
+                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleSignup} disabled={loading}
+                        className="w-full bg-gradient-to-r from-primary to-primarydark text-white font-bold py-4 rounded-2xl text-sm shadow-[0_8px_20px_rgb(107,76,255,0.3)] hover:shadow-[0_8px_25px_rgb(107,76,255,0.4)] transition-all mt-4 disabled:opacity-60 disabled:scale-100"
+                    >
+                        {loading ? "Creating account..." : "Create Account"}
+                    </motion.button>
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-4 my-1">
+                        <div className="flex-1 h-[2px] bg-slate-200/60 rounded-full"></div>
+                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">or</span>
+                        <div className="flex-1 h-[2px] bg-slate-200/60 rounded-full"></div>
+                    </div>
+
+                    {/* Google */}
+                    <motion.button
+                        whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,1)" }} whileTap={{ scale: 0.98 }} onClick={handleGoogle} disabled={loading}
+                        className="w-full bg-white/70 border border-white/50 text-slate-700 font-bold py-3.5 rounded-2xl text-sm hover:shadow-md transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:scale-100"
+                    >
+                        <FcGoogle size={20} />
+                        Continue with Google
+                    </motion.button>
+
+                    <p className="text-center text-sm text-slate-500 mt-2 font-medium">
+                        Already have an account?{" "}
+                        <span onClick={() => navigate("/login")} className="text-primary font-bold cursor-pointer hover:text-primarydark transition-colors">
+                            Sign in
+                        </span>
+                    </p>
+
+                </div>
+            </motion.div>
         </div>
     )
 }
