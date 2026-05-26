@@ -136,6 +136,14 @@ service cloud.firestore {
 }
 ```
 
+### Deployment Configuration (Fixing 404 Errors)
+
+Since VisioChat is a React Single Page Application (SPA), direct navigation to deep links (like `/join/group-id`) might result in a 404 error on standard hosting platforms. We have included configuration files to fix this:
+
+- **Vercel**: The `vercel.json` file in the root directory routes all fallback traffic to `index.html`.
+- **Netlify**: The `public/_redirects` file handles the fallback routing.
+- **Firebase Hosting**: If using Firebase, ensure your `firebase.json` has a rewrite rule mapping `"**"` to `"/index.html"`.
+
 ---
 
 ## 🗺️ Roadmap
