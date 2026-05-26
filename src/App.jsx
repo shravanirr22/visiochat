@@ -7,9 +7,9 @@ import AdminChat from "./pages/adminchat"
 import MemberChat from "./pages/memberchat"
 import CreateGroup from "./pages/creategroup"
 import ProtectedRoute from "./components/protectedroute"
-import PublicRoute from "./components/publicroute"
+import PublicRoute from "./components/PublicRoute"
 import JoinGroup from "./pages/JoinGroup"
-import Profile from "./pages/Profile"
+import Profile from "./pages/profile"
 
 function App() {
   return (
