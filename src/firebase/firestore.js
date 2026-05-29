@@ -13,6 +13,7 @@ import {
     serverTimestamp,
     updateDoc,
     arrayUnion,
+    deleteDoc,
 } from "firebase/firestore"
 
 // Save user to Firestore after signup
@@ -94,4 +95,12 @@ export const listenMessages = (groupId, callback) => {
         const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
         callback(msgs)
     })
+}
+
+// Clear AI Chat messages for a specific user
+export const clearAIChat = async (userId) => {
+    const q = query(collection(db, "messages", `ai_${userId}`, "chats"))
+    const snapshot = await getDocs(q)
+    const promises = snapshot.docs.map((doc) => deleteDoc(doc.ref))
+    await Promise.all(promises)
 }

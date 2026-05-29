@@ -5,9 +5,10 @@ import { sendMessage, listenMessages } from "../firebase/firestore"
 import { motion, AnimatePresence } from "framer-motion"
 import { FiArrowLeft, FiLink, FiSend, FiSettings, FiLock, FiEye, FiClock, FiVolume2, FiX } from "react-icons/fi"
 
-export default function AdminChat() {
+export default function AdminChat({ groupId: propGroupId, onBack }) {
   const navigate = useNavigate()
-  const { groupId } = useParams()
+  const { groupId: routeGroupId } = useParams()
+  const groupId = propGroupId || routeGroupId
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState("")
   const [visibility, setVisibility] = useState("everyone")
@@ -17,7 +18,16 @@ export default function AdminChat() {
   const bottomRef = useRef(null)
   const user = auth.currentUser
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack()
+    } else {
+      navigate("/chats")
+    }
+  }
+
   useEffect(() => {
+    if (!groupId) return
     const unsubscribe = listenMessages(groupId, (msgs) => {
       setMessages(msgs)
     })
@@ -58,8 +68,8 @@ export default function AdminChat() {
       </div>
 
       {/* Top Bar */}
-      <div className="bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-4 pt-12 pb-4 flex items-center gap-3 sticky top-0 z-30 shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
-        <button onClick={() => navigate("/chats")} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100/80 text-slate-600 hover:bg-slate-200 transition-colors">
+      <div className={`bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-4 ${propGroupId ? 'pt-4' : 'pt-12'} pb-4 flex items-center gap-3 sticky top-0 z-30 shadow-[0_4px_30px_rgba(0,0,0,0.02)]`}>
+        <button onClick={handleBack} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100/80 text-slate-600 hover:bg-slate-200 transition-colors">
           <FiArrowLeft size={20} />
         </button>
         <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-primarydark flex items-center justify-center text-white text-sm font-bold shadow-md">
