@@ -1,9 +1,58 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { auth } from "../firebase/config"
-import { sendMessage, listenMessages } from "../firebase/firestore"
+import { sendMessage, listenMessages, uploadChatFile } from "../firebase/firestore"
 import { motion, AnimatePresence } from "framer-motion"
-import { FiArrowLeft, FiLink, FiSend, FiSettings, FiLock, FiEye, FiClock, FiVolume2, FiX } from "react-icons/fi"
+import { FiArrowLeft, FiLink, FiSend, FiSettings, FiLock, FiEye, FiClock, FiVolume2, FiX, FiPlus, FiImage, FiFileText, FiPaperclip, FiDownload } from "react-icons/fi"
+
+const renderMessageContent = (msg, isMe) => {
+  const hasFile = !!msg.fileUrl
+  const isImage = hasFile && msg.fileType?.startsWith("image/")
+
+  if (!hasFile) {
+    return <div className={isMe ? "text-white text-[15px] leading-relaxed" : "text-slate-800 text-[15px] leading-relaxed"}>{msg.text}</div>
+  }
+
+  if (isImage) {
+    return (
+      <div className="flex flex-col gap-2 max-w-sm">
+        <motion.img 
+          whileHover={{ scale: 1.01 }}
+          src={msg.fileUrl} 
+          alt={msg.fileName || "Image"} 
+          className="max-h-64 object-cover rounded-2xl w-full cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+          onClick={() => window.open(msg.fileUrl, '_blank')}
+        />
+        {msg.text && msg.text !== msg.fileName && (
+          <div className={isMe ? "text-white text-[15px] leading-relaxed mt-1" : "text-slate-800 text-[15px] leading-relaxed mt-1"}>{msg.text}</div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isMe ? 'bg-white/15 border-white/20 text-white' : 'bg-slate-50 border-slate-200/80 text-slate-800'} max-w-xs`}>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isMe ? 'bg-white/25 text-white' : 'bg-primary/10 text-primary'}`}>
+        <FiPaperclip size={18} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold truncate">{msg.fileName || "File"}</div>
+        <div className={`text-[10px] ${isMe ? 'text-white/60' : 'text-slate-400'} font-semibold mt-0.5`}>
+          {msg.fileSize ? `${(msg.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'}
+        </div>
+      </div>
+      <a 
+        href={msg.fileUrl} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        download={msg.fileName}
+        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors flex-shrink-0 ${isMe ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-slate-200/60 hover:bg-slate-200 text-slate-600 hover:text-slate-800'}`}
+      >
+        <FiDownload size={16} />
+      </a>
+    </div>
+  )
+}
 
 export default function AdminChat({ groupId: propGroupId, onBack }) {
   const navigate = useNavigate()
@@ -15,8 +64,65 @@ export default function AdminChat({ groupId: propGroupId, onBack }) {
   const [isAnnounce, setIsAnnounce] = useState(false)
   const [isTimed, setIsTimed] = useState(false)
   const [showShare, setShowShare] = useState(false)
+  const [showUploadMenu, setShowUploadMenu] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [fileTypeAccept, setFileTypeAccept] = useState("*")
   const bottomRef = useRef(null)
+  const uploadMenuRef = useRef(null)
+  const fileInputRef = useRef(null)
   const user = auth.currentUser
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target)) {
+        setShowUploadMenu(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setShowUploadMenu(false)
+    setUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const url = await uploadChatFile(groupId, file, (progress) => {
+        setUploadProgress(Math.round(progress))
+      })
+
+      await sendMessage(groupId, {
+        text: file.name,
+        senderId: user.uid,
+        senderName: user.displayName,
+        type: isAnnounce ? "announce" : "normal",
+        visibility: visibility,
+        timed: isTimed,
+        fileUrl: url,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      })
+    } catch (err) {
+      console.error("Upload error:", err)
+      alert("File upload failed. Please try again.")
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
+  const triggerFileInput = (acceptType) => {
+    setFileTypeAccept(acceptType)
+    setTimeout(() => {
+      fileInputRef.current?.click()
+    }, 50)
+  }
 
   const handleBack = () => {
     if (onBack) {
@@ -118,7 +224,7 @@ export default function AdminChat({ groupId: propGroupId, onBack }) {
               {msg.senderId === user.uid && msg.type !== "announce" && (
                 <div className="flex flex-col items-end">
                   <div className="bg-gradient-to-br from-primary to-primarydark rounded-3xl rounded-tr-[4px] px-5 py-3 max-w-[80%] shadow-[0_4px_15px_rgba(107,76,255,0.2)]">
-                    <div className="text-white text-[15px] leading-relaxed">{msg.text}</div>
+                    {renderMessageContent(msg, true)}
                     <div className="flex items-center justify-between gap-4 mt-2">
                       <span className="text-white/70 text-[10px] font-bold flex items-center gap-1">
                         {msg.timed ? <><FiClock size={10} /> Timed</> : msg.visibility === "selected" ? <><FiLock size={10}/> Selected</> : <><FiEye size={10}/> Everyone</>}
@@ -136,7 +242,7 @@ export default function AdminChat({ groupId: propGroupId, onBack }) {
                 <div className="flex flex-col items-start">
                   <div className="text-[11px] font-bold text-slate-400 mb-1 ml-2">{msg.senderName}</div>
                   <div className="bg-white border border-slate-100 rounded-3xl rounded-tl-[4px] px-5 py-3 max-w-[80%] shadow-[0_4px_15px_rgba(0,0,0,0.03)]">
-                    <div className="text-slate-800 text-[15px] leading-relaxed">{msg.text}</div>
+                    {renderMessageContent(msg, false)}
                     <div className="text-slate-400 text-[10px] font-bold mt-2 text-right">
                       {msg.createdAt?.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </div>
@@ -185,15 +291,94 @@ export default function AdminChat({ groupId: propGroupId, onBack }) {
           </div>
 
           {/* Input */}
-          <div className="bg-white/95 backdrop-blur-xl px-4 py-3 pb-6 flex items-end gap-2">
-            <div className="flex-1 bg-slate-100 border border-slate-200 rounded-3xl min-h-[48px] px-5 py-3 flex items-center shadow-inner">
+          <div className="bg-white/95 backdrop-blur-xl px-4 py-3 pb-6 flex items-end gap-2 relative">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              accept={fileTypeAccept}
+              className="hidden" 
+            />
+
+            {/* Uploading Progress Notification Overlay */}
+            <AnimatePresence>
+              {uploading && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 15 }}
+                  className="absolute inset-x-4 bottom-20 bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl p-4 flex items-center gap-4 shadow-lg z-30"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center animate-spin">
+                    <FiClock size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-slate-800 text-sm font-bold truncate">Uploading attachment...</div>
+                    <div className="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
+                      <motion.div 
+                        className="bg-primary h-full rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${uploadProgress}%` }}
+                        transition={{ duration: 0.1 }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-primary text-xs font-black whitespace-nowrap">{uploadProgress}%</div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="flex-1 bg-slate-100 border border-slate-200 rounded-3xl min-h-[48px] px-3 py-2 flex items-center shadow-inner relative gap-2">
+                {/* Upload Popup Trigger and Menu */}
+                <div className="relative" ref={uploadMenuRef}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowUploadMenu(!showUploadMenu)}
+                    className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-500 hover:text-primary hover:bg-primary/5 shadow-sm transition-colors flex-shrink-0"
+                  >
+                    <FiPlus size={18} className={`transition-transform duration-200 ${showUploadMenu ? 'rotate-45' : ''}`} />
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {showUploadMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                        className="absolute bottom-12 left-0 bg-white/90 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-2.5 shadow-[0_10px_40px_rgba(0,0,0,0.12)] min-w-[200px] flex flex-col gap-1 z-40"
+                      >
+                        <button
+                          onClick={() => triggerFileInput("image/*,video/*")}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-slate-700 text-sm font-semibold transition-colors text-left w-full"
+                        >
+                          <span className="w-8 h-8 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center flex-shrink-0">
+                            <FiImage size={16} />
+                          </span>
+                          Photos & Videos
+                        </button>
+                        <button
+                          onClick={() => triggerFileInput("*")}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-slate-700 text-sm font-semibold transition-colors text-left w-full"
+                        >
+                          <span className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center flex-shrink-0">
+                            <FiFileText size={16} />
+                          </span>
+                          Document
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSend()}
                     placeholder="Type a message..."
-                    className="w-full bg-transparent text-[15px] text-slate-800 placeholder-slate-400 outline-none"
+                    className="flex-1 bg-transparent text-[15px] text-slate-800 placeholder-slate-400 outline-none pr-2"
                 />
             </div>
             <motion.button
